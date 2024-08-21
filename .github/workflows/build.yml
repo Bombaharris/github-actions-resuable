@@ -1,20 +1,25 @@
-name: Reusable workflow example
-
+name: Reusable build
+# Changed 'on' to enable this workflow to be called from other workflows
 on:
   workflow_call:
+    # Introduced 'inputs' to define parameters that can be passed when calling this workflow
     inputs:
-      config-path:
+      node-version:
+        description: "Node version"
         required: true
         type: string
-    secrets:
-      token:
-        required: true
 
-jobs:
-  triage:
+jobs: 
+  build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/labeler@v4
-      with:
-        repo-token: ${{ secrets.token }}
-        configuration-path: ${{ inputs.config-path }}
+
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+      # Modified to use the node-version from the workflow inputs
+      - name: use node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - run: npm -v
