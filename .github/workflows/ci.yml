@@ -1,15 +1,6 @@
 name: Reusable CI
 on:
   workflow_call:
-    inputs:
-      NODE_VERSION:
-        description: "Node version"
-        required: true
-        type: string
-      APP_NAME:
-          description: "App name"
-          required: true
-          type: string
 
 jobs:
   build:
@@ -27,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ inputs.NODE_VERSION }}
+          node-version: ${{ vars.NODE_VERSION }}
           registry-url: https://npm.pkg.github.com/
           scope: '@cytiva'
 
@@ -48,4 +39,4 @@ jobs:
         run: npm run test:ci
 
       - name: Run build
-        run: npm run build:single-spa:${{ inputs.APP_NAME }}
+        run: npm run build:single-spa:${{ vars.APP_NAME }}

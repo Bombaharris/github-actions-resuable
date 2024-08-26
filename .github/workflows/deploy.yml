@@ -2,14 +2,6 @@ name: Deploy
 on:
   workflow_call:
     inputs:
-      NODE_VERSION:
-        description: "Node version"
-        required: true
-        type: string
-      APP_NAME:
-          description: "App name"
-          required: true
-          type: string
       GH_REF:
           description: "Release tag name or commit sha"
           required: true
@@ -40,22 +32,22 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ inputs.NODE_VERSION }}
+        node-version: ${{ vars.NODE_VERSION }}
         registry-url: https://npm.pkg.github.com/
         scope: '@cytiva'
 
     - name: npm ci, build, assetize
       run: |
         npm ci
-        npm run build:single-spa:${{ inputs.APP_NAME }} -- --configuration ${{ inputs.ENV }}
+        npm run build:single-spa:${{ vars.APP_NAME }} -- --configuration ${{ inputs.ENV }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
-        path: dist/${{ inputs.APP_NAME }}
+        name: ${{ vars.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
+        path: dist/${{ vars.APP_NAME }}
 
   deploy:
     permissions:
@@ -70,7 +62,7 @@ jobs:
     - name: Download artifact from build job
       uses: actions/download-artifact@v3
       with:
-        name: ${{ inputs.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
+        name: ${{ vars.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
 
     # - name: Deploy To Azure
     #   uses: bacongobbler/azure-blob-storage-upload@v1.2.0
