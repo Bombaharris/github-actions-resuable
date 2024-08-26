@@ -1,0 +1,51 @@
+name: Reusable CI
+on:
+  workflow_call:
+    inputs:
+      NODE_VERSION:
+        description: "Node version"
+        required: true
+        type: string
+      APP_NAME:
+          description: "App name"
+          required: true
+          type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.NODE_VERSION }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@cytiva'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache
+            ~/.npm
+          key: dependencies-v1-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+
+      - name: Run test
+        run: npm run test:ci
+
+      - name: Run build
+        run: npm run build:single-spa:${{ inputs.APP_NAME }}
