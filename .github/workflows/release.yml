@@ -1,0 +1,114 @@
+name: Release
+on:
+  workflow_call:
+    inputs:
+      VERSION:
+          description: "Release tag name"
+          required: true
+          type: string 
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+    steps:
+      - name: Validate Semver
+        id: semver
+        uses: matt-usurp/validate-semver@v1
+        with:
+          version: ${{ inputs.VERSION }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -y install git-flow
+
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ vars.NODE_VERSION }}
+          registry-url: https://npm.pkg.github.com/
+          scope: '@cytiva'
+
+      - name: Initialize mandatory git config
+        run: |
+          git config user.name "Release manager"
+          git config user.email noreply@github.com
+
+      - name: Init git flow
+        run: |
+          git checkout master
+          git checkout develop
+          git flow init -d
+
+      - name: Install packages
+        run: |
+          npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+
+      - name: Release start
+        run: |
+          git flow release start v${{ steps.semver.outputs.version }}
+
+      - name: Bump package.json version
+        run: |
+          npm version --git-tag-version=false v${{ steps.semver.outputs.version }}
+
+      - name: Commit changes
+        run: |
+          git commit -a -m "chore: release version v${{ steps.semver.outputs.version }}"
+
+      - name: Generate changelog
+        run: |
+          npm run changelog
+
+      - name: Commit changes
+        run: |
+          git commit -a -m "chore: v${{ steps.semver.outputs.version }} changelog"
+
+      - name: Release publish
+        run: |
+          git flow release publish
+
+      - name: Release finish
+        run: |
+          git flow release finish v${{ steps.semver.outputs.version }} -m "chore: version bumped" v${{ steps.semver.outputs.version }}
+
+      - name: Release publish tags
+        run: |
+          git push --all --follow-tags --no-verify
+
+      - name: Checkout tag
+        run: |
+          git checkout v${{ steps.semver.outputs.version }}
+
+      - name: Retrive GitHub API CHANGELOG
+        id: changelog
+        uses: requarks/changelog-action@v1
+        continue-on-error: true
+        with:
+          token: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+          tag: v${{ steps.semver.outputs.version }}
+          writeToFile: false
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+        with:
+          tag_name: v${{ steps.semver.outputs.version }}
+          release_name: v${{ steps.semver.outputs.version }}
+          body: ${{ steps.changelog.outputs.changes }}
+          draft: false
+          prerelease: false
