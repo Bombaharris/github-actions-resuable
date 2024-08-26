@@ -25,12 +25,12 @@ jobs:
         VARS_CONTEXT: ${{ toJson(vars) }}
       run: echo "$VARS_CONTEXT"
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{ inputs.GH_REF }}
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ vars.NODE_VERSION }}
         registry-url: https://npm.pkg.github.com/
@@ -44,7 +44,7 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
 
     - name: Upload artifact for deployment job
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ vars.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
         path: dist/${{ vars.APP_NAME }}
@@ -60,7 +60,7 @@ jobs:
 
     steps:
     - name: Download artifact from build job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ vars.APP_NAME }}-${{ inputs.GH_REF }}-${{ inputs.ENV }}
 
