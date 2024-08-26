@@ -1,0 +1,65 @@
+name: Dockerize
+on:
+  workflow_call:
+    inputs:
+      TAG:
+          description: "Release tag name"
+          required: true
+          type: string 
+      IMAGE_NAME:
+          description: "Release image name"
+          required: true
+          type: string 
+
+env:
+  REGISTRY: ghcr.io
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.TAG }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ vars.NODE_VERSION }}
+        registry-url: https://npm.pkg.github.com/
+        scope: '@cytiva'
+
+    - name: npm ci, build, assetize
+      run: |
+        npm ci
+        npm run build:single-spa:${{ vars.APP_NAME }} -- --configuration docker
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_CYTIVA }}
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ inputs.IMAGE_NAME }}:${{ inputs.TAG }}
+          ${{ env.REGISTRY }}/${{ inputs.IMAGE_NAME }}:latest
