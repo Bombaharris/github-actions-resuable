@@ -1,4 +1,4 @@
-name: Dockerize
+name: Reusable Dockerize
 on:
   workflow_call:
     inputs:
