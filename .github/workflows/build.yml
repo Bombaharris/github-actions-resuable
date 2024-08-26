@@ -1,8 +1,6 @@
 name: Reusable build
-# Changed 'on' to enable this workflow to be called from other workflows
 on:
   workflow_call:
-    # Introduced 'inputs' to define parameters that can be passed when calling this workflow
     inputs:
       NODE_VERSION:
         description: "Node version"
